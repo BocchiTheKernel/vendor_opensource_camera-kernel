@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2021 XiaoMi, Inc.
  */
 
 #include <linux/of.h>
@@ -202,6 +203,7 @@ irqreturn_t cam_jpeg_enc_irq(int irq_num, void *data)
 	if (CAM_JPEG_HW_IRQ_IS_FRAME_DONE(irq_status, hw_info)) {
 		spin_lock(&jpeg_enc_dev->hw_lock);
 		if (core_info->core_state == CAM_JPEG_ENC_CORE_READY) {
+			CAM_TRACE(CAM_JPEG, "FrameDone IRQ");
 			encoded_size = cam_io_r_mb(mem_base +
 			core_info->jpeg_enc_hw_info->reg_offset.encode_size);
 			if (core_info->irq_cb.jpeg_hw_mgr_cb) {
@@ -211,6 +213,7 @@ irqreturn_t cam_jpeg_enc_irq(int irq_num, void *data)
 			} else {
 				CAM_ERR(CAM_JPEG, "unexpected done, no cb");
 			}
+			cam_cpas_notify_event("JPEG FrameDone", 0);
 		} else {
 			CAM_ERR(CAM_JPEG, "unexpected done irq");
 		}

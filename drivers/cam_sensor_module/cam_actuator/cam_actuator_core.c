@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
- * Copyright (C) 2020 XiaoMi, Inc.
+ * Copyright (C) 2021 XiaoMi, Inc.
  */
 
 #include <linux/module.h>
@@ -107,8 +107,15 @@ static int32_t cam_actuator_power_up(struct cam_actuator_ctrl_t *a_ctrl)
 	}
 
 	rc = camera_io_init(&a_ctrl->io_master_info);
-	if (rc < 0)
+	if (rc < 0) {
 		CAM_ERR(CAM_ACTUATOR, "cci init failed: rc: %d", rc);
+		goto cci_failure;
+	}
+
+	return rc;
+cci_failure:
+	if (cam_sensor_util_power_down(power_info, soc_info))
+		CAM_ERR(CAM_ACTUATOR, "Power down failure");
 
 	return rc;
 }
@@ -263,6 +270,19 @@ int32_t cam_actuator_apply_settings(struct cam_actuator_ctrl_t *a_ctrl,
 			CAM_ERR(CAM_ACTUATOR,
 				"Failed to apply settings: %d",
 				rc);
+			/* xiaomi add to ignore the apply setting fail - begin */
+			usleep_range(1000, 1010);
+			rc = cam_actuator_i2c_modes_util(
+				&(a_ctrl->io_master_info),
+				i2c_list);
+			if (rc < 0) {
+				CAM_ERR(CAM_SENSOR,
+					"Failed to re-apply settings: %d, skip",
+					rc);
+				rc = 0;
+				break;
+			}
+			/* xiaomi add to ignore the apply setting fail - end */
 		} else {
 			CAM_DBG(CAM_ACTUATOR,
 				"Success:request ID: %d",
@@ -795,6 +815,7 @@ void cam_actuator_shutdown(struct cam_actuator_ctrl_t *a_ctrl)
 	power_info->power_down_setting = NULL;
 	power_info->power_setting_size = 0;
 	power_info->power_down_setting_size = 0;
+	a_ctrl->last_flush_req = 0;
 
 	a_ctrl->cam_act_state = CAM_ACTUATOR_INIT;
 }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2019-2020, The Linux Foundation. All rights reserved.
- * Copyright (C) 2020 XiaoMi, Inc.
+ * Copyright (C) 2021 XiaoMi, Inc.
  */
 
 #include <linux/slab.h>
@@ -1454,6 +1454,8 @@ static int cam_vfe_camif_ver3_handle_irq_bottom_half(void *handler_priv,
 		camif_priv->epoch_ts.tv_usec =
 			payload->ts.mono_time.tv_usec;
 
+		cam_cpas_notify_event("IFE EPOCH", evt_info.hw_idx);
+
 		if (camif_priv->event_cb)
 			camif_priv->event_cb(camif_priv->priv,
 				CAM_ISP_HW_EVENT_EPOCH, (void *)&evt_info);
@@ -1468,6 +1470,8 @@ static int cam_vfe_camif_ver3_handle_irq_bottom_half(void *handler_priv,
 			payload->ts.mono_time.tv_sec;
 		camif_priv->eof_ts.tv_usec =
 			payload->ts.mono_time.tv_usec;
+
+		cam_cpas_notify_event("IFE EOF", evt_info.hw_idx);
 
 		if (camif_priv->event_cb)
 			camif_priv->event_cb(camif_priv->priv,
@@ -1486,6 +1490,7 @@ static int cam_vfe_camif_ver3_handle_irq_bottom_half(void *handler_priv,
 			ts.tv_sec, ts.tv_nsec/1000);
 
 		ret = CAM_VFE_IRQ_STATUS_OVERFLOW;
+		evt_info.err_type = CAM_VFE_IRQ_STATUS_OVERFLOW;
 
 		CAM_INFO(CAM_ISP, "ife_clk_src:%lld",
 			soc_private->ife_clk_src);
@@ -1518,6 +1523,7 @@ static int cam_vfe_camif_ver3_handle_irq_bottom_half(void *handler_priv,
 			ts.tv_sec, ts.tv_nsec/1000);
 
 		ret = CAM_VFE_IRQ_STATUS_VIOLATION;
+		evt_info.err_type = CAM_VFE_IRQ_STATUS_VIOLATION;
 
 		CAM_INFO(CAM_ISP, "ife_clk_src:%lld",
 			soc_private->ife_clk_src);

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2015-2020, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2021 XiaoMi, Inc.
  */
 
 #include <linux/of.h>
@@ -8,6 +9,7 @@
 #include <linux/slab.h>
 #include <linux/gpio.h>
 #include <linux/of_gpio.h>
+#include <linux/hwid.h>
 #include "cam_soc_util.h"
 #include "cam_debug_util.h"
 #include "cam_cx_ipeak.h"
@@ -907,7 +909,7 @@ end:
 }
 
 int cam_soc_util_set_clk_rate_level(struct cam_hw_soc_info *soc_info,
-	enum cam_vote_level clk_level)
+	enum cam_vote_level clk_level, bool do_not_set_src_clk)
 {
 	int i, rc = 0;
 	enum cam_vote_level apply_level;
@@ -928,6 +930,16 @@ int cam_soc_util_set_clk_rate_level(struct cam_hw_soc_info *soc_info,
 		cam_cx_ipeak_update_vote_cx_ipeak(soc_info, apply_level);
 
 	for (i = 0; i < soc_info->num_clk; i++) {
+		if (do_not_set_src_clk && (i == soc_info->src_clk_idx)) {
+			CAM_DBG(CAM_UTIL, "Skipping set rate for src clk %s",
+				soc_info->clk_name[i]);
+			continue;
+		}
+
+		CAM_DBG(CAM_UTIL, "Set rate for clk %s rate %d",
+			soc_info->clk_name[i],
+			soc_info->clk_rate[apply_level][i]);
+
 		rc = cam_soc_util_set_clk_rate(soc_info->clk[i],
 			soc_info->clk_name[i],
 			soc_info->clk_rate[apply_level][i]);
@@ -1374,6 +1386,11 @@ int cam_soc_util_regulator_disable(struct regulator *rgltr,
 	else if (rgltr_delay_ms)
 		usleep_range(rgltr_delay_ms * 1000,
 			(rgltr_delay_ms * 1000) + 1000);
+	else if (get_hw_version_platform() == HARDWARE_PROJECT_K11) {
+		CAM_DBG(CAM_UTIL, "need wait 1ms for AF regulator hardware disabling");
+		if (!strcmp(rgltr_name,"cam_vaf")) //just for L11C OCP(K11)
+			usleep_range(1000,2000);
+	}
 
 	if (regulator_count_voltages(rgltr) > 0) {
 		regulator_set_load(rgltr, 0);

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2020, The Linux Foundation. All rights reserved.
- * Copyright (C) 2020 XiaoMi, Inc.
  */
 
 
@@ -938,6 +937,7 @@ static int cam_sfe_bus_acquire_sfe_out(void *priv, void *acquire_args,
 		return -EINVAL;
 	}
 
+	comp_grp_id = CAM_SFE_BUS_WR_COMP_GRP_MAX;
 	out_acquire_args = &acq_args->sfe_out;
 	format = out_acquire_args->out_port_info->format;
 

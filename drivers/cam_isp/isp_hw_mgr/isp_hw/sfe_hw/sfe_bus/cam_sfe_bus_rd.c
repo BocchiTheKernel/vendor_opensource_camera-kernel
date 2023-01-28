@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2020, The Linux Foundation. All rights reserved.
- * Copyright (C) 2020 XiaoMi, Inc.
  */
 
 #include <linux/ratelimit.h>
@@ -775,7 +774,7 @@ static int cam_sfe_bus_release_bus_rd(void *bus_priv, void *release_args,
 static int cam_sfe_bus_start_bus_rd(
 	void *hw_priv, void *stop_hw_args, uint32_t arg_size)
 {
-	int rc, i;
+	int rc = -ENODEV, i;
 	struct cam_isp_resource_node *sfe_bus_rd = NULL;
 	struct cam_sfe_bus_rd_data *rsrc_data = NULL;
 	struct cam_sfe_bus_rd_common_data *common_data = NULL;
@@ -812,8 +811,9 @@ static int cam_sfe_bus_start_bus_rd(
 		rc = cam_sfe_bus_start_rm(rsrc_data->rm_res[i]);
 
 	/* TO DO Subscribe mask for buf_done */
+	if (!rc)
+		sfe_bus_rd->res_state = CAM_ISP_RESOURCE_STATE_STREAMING;
 
-	sfe_bus_rd->res_state = CAM_ISP_RESOURCE_STATE_STREAMING;
 	return rc;
 }
 

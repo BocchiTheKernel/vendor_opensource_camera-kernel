@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2021 XiaoMi, Inc.
  */
 
 #ifndef _CAM_HW_MGR_INTF_H_
@@ -107,10 +108,12 @@ struct cam_hw_done_event_data {
  * struct cam_hw_acquire_args - Payload for acquire command
  *
  * @context_data:          Context data pointer for the callback function
+ * @ctx_id:                Core context id
  * @event_cb:              Callback function array
  * @num_acq:               Total number of acquire in the payload
  * @acquire_info:          Acquired resource array pointer
  * @ctxt_to_hw_map:        HW context (returned)
+ * @hw_mgr_ctx_id          HWMgr context id(returned)
  * @custom_enabled:        ctx has custom enabled
  * @use_frame_header_ts:   Use frame header for qtimer ts
  * @support_consumed_addr: The platform has last consumed addr register
@@ -123,11 +126,13 @@ struct cam_hw_done_event_data {
  */
 struct cam_hw_acquire_args {
 	void                        *context_data;
+	uint32_t                     ctx_id;
 	cam_hw_event_cb_func         event_cb;
 	uint32_t                     num_acq;
 	uint32_t                     acquire_info_size;
 	uintptr_t                    acquire_info;
 	void                        *ctxt_to_hw_map;
+	uint32_t                     hw_mgr_ctx_id;
 	bool                         custom_enabled;
 	bool                         use_frame_header_ts;
 	bool                         support_consumed_addr;
@@ -243,14 +248,16 @@ struct cam_hw_stream_setttings {
 /**
  * struct cam_hw_config_args - Payload for config command
  *
- * @ctxt_to_hw_map:        HW context from the acquire
- * @num_hw_update_entries: Number of hardware update entries
- * @hw_update_entries:     Hardware update list
- * @out_map_entries:       Out map info
- * @num_out_map_entries:   Number of out map entries
- * @priv:                  Private pointer
- * @request_id:            Request ID
- * @reapply                True if reapplying after bubble
+ * @ctxt_to_hw_map:            HW context from the acquire
+ * @num_hw_update_entries:     Number of hardware update entries
+ * @hw_update_entries:         Hardware update list
+ * @out_map_entries:           Out map info
+ * @num_out_map_entries:       Number of out map entries
+ * @priv:                      Private pointer
+ * @request_id:                Request ID
+ * @reapply:                   True if reapplying after bubble
+ * @cdm_reset_before_apply:    True is need to reset CDM before re-apply bubble
+ *                             request
  *
  */
 struct cam_hw_config_args {
@@ -263,6 +270,7 @@ struct cam_hw_config_args {
 	uint64_t                        request_id;
 	bool                            init_packet;
 	bool                            reapply;
+	bool                            cdm_reset_before_apply;
 };
 
 /**

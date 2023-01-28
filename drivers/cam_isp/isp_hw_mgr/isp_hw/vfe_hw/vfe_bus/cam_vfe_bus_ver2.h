@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2021 XiaoMi, Inc.
  */
 
 #ifndef _CAM_VFE_BUS_VER2_H_
@@ -101,6 +102,7 @@ struct cam_vfe_bus_ver2_reg_offset_ubwc_client {
 	uint32_t meta_stride;
 	uint32_t mode_cfg_0;
 	uint32_t bw_limit;
+	uint32_t ubwc_comp_en_bit;
 };
 
 /*
@@ -118,6 +120,7 @@ struct cam_vfe_bus_ver2_reg_offset_ubwc_3_client {
 	uint32_t mode_cfg_0;
 	uint32_t mode_cfg_1;
 	uint32_t bw_limit;
+	uint32_t ubwc_comp_en_bit;
 };
 
 
@@ -182,6 +185,7 @@ struct cam_vfe_bus_ver2_vfe_out_hw_info {
  * @vfe_out_hw_info:       VFE output capability
  * @top_irq_shift:         Mask shift for top level BUS WR irq
  * @support_consumed_addr: Indicate if bus support consumed address
+ * @max_out_res:           Max vfe out resource value supported for hw
  */
 struct cam_vfe_bus_ver2_hw_info {
 	struct cam_vfe_bus_ver2_reg_offset_common common_reg;
@@ -195,6 +199,7 @@ struct cam_vfe_bus_ver2_hw_info {
 		vfe_out_hw_info[CAM_VFE_BUS_VER2_VFE_OUT_MAX];
 	uint32_t top_irq_shift;
 	bool support_consumed_addr;
+	uint32_t max_out_res;
 };
 
 /*

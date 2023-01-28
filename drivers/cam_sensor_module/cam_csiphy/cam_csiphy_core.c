@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
- * Copyright (C) 2020 XiaoMi, Inc.
+ * Copyright (C) 2021 XiaoMi, Inc.
  */
 
 #include <linux/module.h>
+#include <linux/hwid.h>
 
 #include <dt-bindings/msm/msm-camera.h>
 
@@ -40,10 +41,10 @@ static int csiphy_dump;
 module_param(csiphy_dump, int, 0644);
 
 static int csiphy_override_cnt  = 6;
-static int csiphy_override[100] = {0x9B4,0x8,0xAB4,0x8,0xBB4,0x8};
+static int csiphy_override[100] = {0x9B4,0xa,0xAB4,0xa,0xBB4,0xa};
 module_param_array(csiphy_override, int, &csiphy_override_cnt, 0644);
 
-static int csiphy_hack_rate_mb = 3500;
+static int csiphy_hack_rate_mb = 2000;
 module_param(csiphy_hack_rate_mb, int, 0644);
 
 
@@ -859,14 +860,18 @@ int32_t cam_csiphy_config_dev(struct csiphy_device *csiphy_dev,
 		}
 
 		//csiphy_3phase only
-		if ((csiphy_dev->csiphy_info[index].data_rate/1000000) > csiphy_hack_rate_mb)
-		{
-			for (i = 0; i < csiphy_override_cnt; i += 2)
+                if ((get_hw_version_platform() == HARDWARE_PROJECT_K11) ||
+                    (get_hw_version_platform() == HARDWARE_PROJECT_J18)) {
+                        CAM_DBG(CAM_CSIPHY, "just for k11/J18 modify csiphy_cfg register");
+			if ((csiphy_dev->csiphy_info[index].data_rate/1000000) > csiphy_hack_rate_mb)
 			{
-				   cam_io_w_mb(csiphy_override[i+1],  csiphybase + csiphy_override[i]);
-				   CAM_DBG(CAM_CSIPHY, "csiphy_cfg_override [0x%x, 0x%x]", csiphy_override[i], csiphy_override[i+1]);
+				for (i = 0; i < csiphy_override_cnt; i += 2)
+				{
+					cam_io_w_mb(csiphy_override[i+1],  csiphybase + csiphy_override[i]);
+					CAM_DBG(CAM_CSIPHY, "csiphy_cfg_override [0x%x, 0x%x]", csiphy_override[i], csiphy_override[i+1]);
+				}
 			}
-		}
+                }
 	}
 
 	cam_csiphy_cphy_irq_config(csiphy_dev);
@@ -911,7 +916,8 @@ void cam_csiphy_shutdown(struct csiphy_device *csiphy_dev)
 		cam_csiphy_reset(csiphy_dev);
 		cam_soc_util_disable_platform_resource(soc_info, true, true);
 
-		cam_cpas_stop(csiphy_dev->cpas_handle);
+		//deleted by xiaomi
+		//cam_cpas_stop(csiphy_dev->cpas_handle);
 		csiphy_dev->csiphy_state = CAM_CSIPHY_ACQUIRE;
 	}
 
@@ -927,6 +933,8 @@ void cam_csiphy_shutdown(struct csiphy_device *csiphy_dev)
 		}
 	}
 
+	// xiaomi: force stop cpas
+	cam_cpas_stop(csiphy_dev->cpas_handle);
 	csiphy_dev->ref_count = 0;
 	csiphy_dev->acquire_count = 0;
 	csiphy_dev->start_dev_count = 0;
@@ -1358,7 +1366,7 @@ int32_t cam_csiphy_core_cfg(void *phy_dev,
 				csiphy_dev->ctrl_reg->getclockvoting(
 					csiphy_dev, offset);
 			rc = cam_soc_util_set_clk_rate_level(
-				&csiphy_dev->soc_info, clk_vote_level);
+				&csiphy_dev->soc_info, clk_vote_level, false);
 			if (rc) {
 				CAM_WARN(CAM_CSIPHY,
 					"Failed to set the clk_rate level: %d",

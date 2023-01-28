@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2016-2020, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2021 XiaoMi, Inc.
  */
 #ifndef _CAM_REQ_MGR_CORE_H_
 #define _CAM_REQ_MGR_CORE_H_
@@ -13,7 +14,8 @@
 #define CAM_REQ_MGR_MAX_LINKED_DEV     16
 #define MAX_REQ_SLOTS                  48
 
-#define CAM_REQ_MGR_WATCHDOG_TIMEOUT          1000
+/* xiaomi add change wd timer reset to 5000ms from 1000ms*/
+#define CAM_REQ_MGR_WATCHDOG_TIMEOUT          5000
 #define CAM_REQ_MGR_WATCHDOG_TIMEOUT_DEFAULT  5000
 #define CAM_REQ_MGR_WATCHDOG_TIMEOUT_MAX      50000
 #define CAM_REQ_MGR_SCHED_REQ_TIMEOUT         1000
@@ -373,7 +375,8 @@ struct cam_req_mgr_connected_device {
  * @eof_event_cnt        : Atomic variable to track the number of EOF requests
  * @skip_init_frame      : skip initial frames crm_wd_timer validation in the
  *                         case of long exposure use case
- * @last_applied_jiffies : Record the jiffies of last applied req
+ * @last_sof_trigger_jiffies : Record the jiffies of last sof trigger jiffies
+ * @wq_congestion        : Indicates if WQ congestion is detected or not
  */
 struct cam_req_mgr_core_link {
 	int32_t                              link_hdl;
@@ -410,7 +413,8 @@ struct cam_req_mgr_core_link {
 	uint32_t    trigger_cnt[CAM_REQ_MGR_MAX_TRIGGERS];
 	atomic_t                             eof_event_cnt;
 	bool                                 skip_init_frame;
-	uint64_t                             last_applied_jiffies;
+	uint64_t                             last_sof_trigger_jiffies;
+	bool                                 wq_congestion;
 };
 
 /**

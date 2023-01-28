@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
- * Copyright (C) 2020 XiaoMi, Inc.
+ * Copyright (C) 2021 XiaoMi, Inc.
  */
 
 #include <linux/module.h>
@@ -15,6 +15,7 @@
 #include "cam_packet_util.h"
 
 #define MAX_READ_SIZE  0x7FFFF
+#define MAX_RETRY_TIMES 3
 
 /**
  * cam_eeprom_read_memory() - read map data into buffer
@@ -186,9 +187,14 @@ static int cam_eeprom_power_up(struct cam_eeprom_ctrl_t *e_ctrl,
 		rc = camera_io_init(&(e_ctrl->io_master_info));
 		if (rc) {
 			CAM_ERR(CAM_EEPROM, "cci_init failed");
-			return -EINVAL;
+			goto cci_failure;
 		}
 	}
+	return rc;
+cci_failure:
+	if (cam_sensor_util_power_down(power_info, soc_info))
+		CAM_ERR(CAM_EEPROM, "Power down failure");
+
 	return rc;
 }
 
@@ -1184,6 +1190,7 @@ del_req:
 static int32_t cam_eeprom_pkt_parse(struct cam_eeprom_ctrl_t *e_ctrl, void *arg)
 {
 	int32_t                         rc = 0;
+	int32_t                         i = 0;
 	struct cam_control             *ioctl_ctrl = NULL;
 	struct cam_config_dev_cmd       dev_config;
 	uintptr_t                        generic_pkt_addr;
@@ -1272,23 +1279,37 @@ static int32_t cam_eeprom_pkt_parse(struct cam_eeprom_ctrl_t *e_ctrl, void *arg)
 			}
 		}
 
-		rc = cam_eeprom_power_up(e_ctrl,
-			&soc_private->power_info);
-		if (rc) {
-			CAM_ERR(CAM_EEPROM, "failed rc %d", rc);
-			goto memdata_free;
+		/* xiaomi add eeprom read retry - begin */
+		for (i = 0; i < MAX_RETRY_TIMES; i++) {
+			rc = cam_eeprom_power_up(e_ctrl,
+				&soc_private->power_info);
+			if (rc) {
+				CAM_ERR(CAM_EEPROM, "failed rc %d", rc);
+				goto memdata_free;
+			}
+
+			e_ctrl->cam_eeprom_state = CAM_EEPROM_CONFIG;
+			rc = cam_eeprom_read_memory(e_ctrl, &e_ctrl->cal_data);
+			if (rc) {
+				CAM_ERR(CAM_EEPROM,
+					"read_eeprom_memory failed at time %d", i);
+				//goto power_down;
+				rc = cam_eeprom_power_down(e_ctrl);
+				usleep_range(10*1000, 11*1000);
+			} else {
+				rc = cam_eeprom_get_cal_data(e_ctrl, csl_packet);
+				rc = cam_eeprom_power_down(e_ctrl);
+				break;
+			}
 		}
 
-		e_ctrl->cam_eeprom_state = CAM_EEPROM_CONFIG;
-		rc = cam_eeprom_read_memory(e_ctrl, &e_ctrl->cal_data);
 		if (rc) {
 			CAM_ERR(CAM_EEPROM,
-				"read_eeprom_memory failed");
-			goto power_down;
+				"read_eeprom_memory failed all the %d times",
+				 MAX_RETRY_TIMES);
 		}
+		/* xiaomi add eeprom read retry - end */
 
-		rc = cam_eeprom_get_cal_data(e_ctrl, csl_packet);
-		rc = cam_eeprom_power_down(e_ctrl);
 		e_ctrl->cam_eeprom_state = CAM_EEPROM_ACQUIRE;
 		vfree(e_ctrl->cal_data.mapdata);
 		vfree(e_ctrl->cal_data.map);
@@ -1359,7 +1380,7 @@ static int32_t cam_eeprom_pkt_parse(struct cam_eeprom_ctrl_t *e_ctrl, void *arg)
 	}
 
 	return rc;
-power_down:
+//power_down:
 	cam_eeprom_power_down(e_ctrl);
 memdata_free:
 	vfree(e_ctrl->cal_data.mapdata);

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
- * Copyright (C) 2020 XiaoMi, Inc.
  */
 
 #include <linux/debugfs.h>
@@ -347,31 +346,36 @@ static int __cam_node_handle_flush_dev(struct cam_node *node,
 		return -EINVAL;
 
 	if (flush->dev_handle <= 0) {
-		CAM_ERR(CAM_CORE, "Invalid device handle for context");
+		CAM_ERR_RATE_LIMIT(CAM_CORE,
+			"Invalid device handle for context");
 		return -EINVAL;
 	}
 
 	if (flush->session_handle <= 0) {
-		CAM_ERR(CAM_CORE, "Invalid session handle for context");
+		CAM_ERR_RATE_LIMIT(CAM_CORE,
+			"Invalid session handle for context");
 		return -EINVAL;
 	}
 
 	ctx = (struct cam_context *)cam_get_device_priv(flush->dev_handle);
 	if (!ctx) {
-		CAM_ERR(CAM_CORE, "Can not get context for handle %d",
+		CAM_ERR_RATE_LIMIT(CAM_CORE,
+			"Can not get context for handle %d",
 			flush->dev_handle);
 		return -EINVAL;
 	}
 
 	if (strcmp(node->name, ctx->dev_name)) {
-		CAM_ERR(CAM_CORE, "node name %s dev name:%s not matching",
+		CAM_ERR_RATE_LIMIT(CAM_CORE,
+			"node name %s dev name:%s not matching",
 			node->name, ctx->dev_name);
 		return -EINVAL;
 	}
 
 	rc = cam_context_handle_flush_dev(ctx, flush);
 	if (rc)
-		CAM_ERR(CAM_CORE, "Flush failure for node %s", node->name);
+		CAM_ERR_RATE_LIMIT(CAM_CORE,
+			"Flush failure for node %s", node->name);
 
 	return rc;
 }
@@ -447,25 +451,29 @@ static int __cam_node_handle_dump_dev(struct cam_node *node,
 		return -EINVAL;
 
 	if (dump->dev_handle <= 0) {
-		CAM_ERR(CAM_CORE, "Invalid device handle for context");
+		CAM_ERR_RATE_LIMIT(CAM_CORE,
+			"Invalid device handle for context");
 		return -EINVAL;
 	}
 
 	if (dump->session_handle <= 0) {
-		CAM_ERR(CAM_CORE, "Invalid session handle for context");
+		CAM_ERR_RATE_LIMIT(CAM_CORE,
+			"Invalid session handle for context");
 		return -EINVAL;
 	}
 
 	ctx = (struct cam_context *)cam_get_device_priv(dump->dev_handle);
 	if (!ctx) {
-		CAM_ERR(CAM_CORE, "Can not get context for handle %d",
+		CAM_ERR_RATE_LIMIT(CAM_CORE,
+			"Can not get context for handle %d",
 			dump->dev_handle);
 		return -EINVAL;
 	}
 
 	rc = cam_context_handle_dump_dev(ctx, dump);
 	if (rc)
-		CAM_ERR(CAM_CORE, "Dump failure for node %s", node->name);
+		CAM_ERR_RATE_LIMIT(CAM_CORE,
+			"Dump failure for node %s", node->name);
 
 	return rc;
 }
